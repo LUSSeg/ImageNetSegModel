@@ -40,9 +40,9 @@ We provide a model zoo to record the trend of semi-supervised semantic segmentat
 For now, this repo supports ViT, and more backbones and pretrained models will be added.
 Please open a pull request if you want to update your new results.
 
-Supported networks: ViT
+Supported networks: ViT, ResNet
 
-Supported pretrain: MAE, SERE
+Supported pretrain: MAE, SERE, PASS
 
 ## Citation
 ```

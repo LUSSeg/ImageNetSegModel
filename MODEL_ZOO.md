@@ -1,6 +1,12 @@
 # Model ZOO for Semi-Supervised Learning on ImageNet-S
 
-## Finetuning with ViTs
+[Finetuning with ViT](#1)
+
+[Finetuning with ResNet](#2)
+
+<div id="1"></div>
+
+## Finetuning with ViT
 
 <table><tbody>
 <!-- START TABLE -->
@@ -135,5 +141,83 @@ python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
 --output_dir ${OUTPATH} \
 --dist_eval
 ```
+</details>
 
+
+<div id="2"></div>
+
+## Finetuning with ResNet
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="bottom">Method</th>
+<th valign="bottom">Arch</th>
+<th valign="bottom">Pretraining epochs</th>
+<th valign="bottom">Pretraining mode</th>
+<th valign="bottom">val</th>
+<th valign="bottom">test</th>
+<th valign="bottom">Pretrained</th>
+<th valign="bottom">Finetuned</th>
+<!-- TABLE BODY -->
+<tr>
+<td align="center"><a href="https://arxiv.org/abs/2106.03149">PASS</a></td>
+<td align="center">ResNet-50 D32</td>
+<td align="center">100</td>
+<td align="center">SSL</td>
+<td align="center">21.0</td>
+<td align="center">20.3</td>
+<td align="center"><a href="https://github.com/LUSSeg/PASS/releases/download/pass/pass919_pretrained.pth.tar">model</a></td>
+<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/pass/imagenets_ssl_pass_resnet50_d32.pth">model</a></td>
+</tr>
+<tr>
+<td align="center"><a href="https://arxiv.org/abs/2106.03149">PASS</a></td>
+<td align="center">ResNet-50 D16</td>
+<td align="center">100</td>
+<td align="center">SSL</td>
+<td align="center">21.6</td>
+<td align="center">20.8</td>
+<td align="center"><a href="https://github.com/LUSSeg/PASS/releases/download/pass/pass919_pretrained.pth.tar">model</a></td>
+<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/pass/imagenets_ssl_pass_resnet50_d16.pth">model</a></td>
+</tr>
+</tbody></table>
+
+`D16` means the output stride is 16 with dilation=2 in the last stage.
+
+### <a href="https://arxiv.org/abs/2206.05184">Large-scale Unsupervised Semantic Segmentation (PASS)</a>
+<details>
+  <summary>Command for SSL (ResNet-50 D32)</summary>
+
+```shell
+python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
+--accum_iter 1 \
+--batch_size 32 \
+--model resnet50 \
+--finetune pass919_pretrained.pth.tar \
+--epochs 100 \
+--nb_classes 920 \
+--blr 5e-4 --layer_decay 0.4 \
+--weight_decay 0.0005 \
+--data_path ${IMAGENETS_DIR} \
+--output_dir ${OUTPATH} \
+--dist_eval
+```
+</details>
+
+<details>
+  <summary>Command for SSL (ResNet-50 D16)</summary>
+
+```shell
+python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
+--accum_iter 1 \
+--batch_size 32 \
+--model resnet50_d16 \
+--finetune pass919_pretrained.pth.tar \
+--epochs 100 \
+--nb_classes 920 \
+--blr 5e-4 --layer_decay 0.45 \
+--weight_decay 0.0005 \
+--data_path ${IMAGENETS_DIR} \
+--output_dir ${OUTPATH} \
+--dist_eval
+```
 </details>

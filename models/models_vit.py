@@ -15,6 +15,7 @@ from functools import partial
 import timm.models.vision_transformer
 import torch
 import torch.nn as nn
+from timm.models.layers import trunc_normal_
 
 
 class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
@@ -25,6 +26,7 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         embed_dim = kwargs['embed_dim']
         norm_layer = kwargs['norm_layer']
         patch_size = kwargs['patch_size']
+        self.num_layers =  len(self.blocks) + 1
 
         self.fc_norm = norm_layer(embed_dim)
         del self.norm
@@ -35,6 +37,8 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
                                       embed_dim=embed_dim)
         assert self.num_classes > 0
         self.head = nn.Conv2d(self.embed_dim, self.num_classes, 1)
+        # manually initialize fc layer
+        trunc_normal_(self.head.weight, std=2e-5)
 
     def forward_features(self, x):
         B, _, w, h = x.shape
@@ -83,6 +87,18 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         return torch.cat((class_pos_embed.unsqueeze(0), patch_pos_embed),
                          dim=1)
 
+    def get_layer_id(self, name):
+        """Assign a parameter with its layer id Following BEiT: https://github.com/
+        microsoft/unilm/blob/master/beit/optim_factory.py#L33."""
+        if name in ['cls_token', 'pos_embed']:
+            return 0
+        elif name.startswith('patch_embed'):
+            return 0
+        elif name.startswith('blocks'):
+            return int(name.split('.')[1]) + 1
+        else:
+            return self.num_layers
+
 
 class PatchEmbed(nn.Module):
     """Image to Patch Embedding."""
@@ -104,7 +120,11 @@ class PatchEmbed(nn.Module):
         return x
 
 
-def vit_small_patch16(**kwargs):
+def vit_small_patch16(args):
+    kwargs = dict(
+        num_classes=args.nb_classes, 
+        drop_path_rate=getattr(args, 'drop_path', 0)
+    )
     model = VisionTransformer(patch_size=16,
                               embed_dim=384,
                               depth=12,
@@ -116,7 +136,11 @@ def vit_small_patch16(**kwargs):
     return model
 
 
-def vit_base_patch16(**kwargs):
+def vit_base_patch16(args):
+    kwargs = dict(
+        num_classes=args.nb_classes, 
+        drop_path_rate=getattr(args, 'drop_path', 0)
+    )
     model = VisionTransformer(patch_size=16,
                               embed_dim=768,
                               depth=12,

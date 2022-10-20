@@ -9,7 +9,7 @@ from PIL import Image
 from torchvision import datasets, transforms
 from tqdm import tqdm
 
-import models.models_vit as models_vit
+import models
 
 
 class SegmentationFolder(datasets.ImageFolder):
@@ -78,11 +78,7 @@ def main():
     args = parse_args()
 
     # build model
-    if 'vit' in args.model:
-        model = models_vit.__dict__[args.model](num_classes=args.nb_classes)
-    else:
-        raise NotImplementedError()
-
+    model = models.__dict__[args.model](args)
     model = model.cuda()
     model.eval()
 

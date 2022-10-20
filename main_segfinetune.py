@@ -22,7 +22,7 @@ import torch
 import torch.backends.cudnn as cudnn
 from timm.models.layers import trunc_normal_
 
-import models.models_vit as models_vit
+import models
 import util.lr_decay as lrd
 import util.misc as misc
 from engine_segfinetune import evaluate, train_one_epoch
@@ -236,11 +236,7 @@ def main(args):
                                                   pin_memory=True,
                                                   drop_last=False)
 
-    if 'vit' in args.model:
-        model = models_vit.__dict__[args.model](num_classes=args.nb_classes,
-                                                drop_path_rate=args.drop_path)
-    else:
-        raise NotImplementedError()
+    model = models.__dict__[args.model](args)
 
     if args.finetune and not args.eval:
         checkpoint = torch.load(args.finetune, map_location='cpu')
@@ -263,18 +259,13 @@ def main(args):
                 print(f'Removing key {k} from pretrained checkpoint')
                 del checkpoint[k]
 
-        # interpolate position embedding
-        interpolate_pos_embed(model, checkpoint)
+        if 'vit' in args.model:
+            # interpolate position embedding
+            interpolate_pos_embed(model, checkpoint)
 
         # load pre-trained model
         msg = model.load_state_dict(checkpoint, strict=False)
-        assert any([
-            x in ('head.weight', 'head.bias', 'fc_norm.weight', 'fc_norm.bias')
-            for x in msg.missing_keys
-        ])
-
-        # manually initialize fc layer
-        trunc_normal_(model.head.weight, std=2e-5)
+        print('Missing: {}'.format(msg.missing_keys))
 
     model.to(device)
 

@@ -21,7 +21,7 @@ def param_groups_lrd(model,
     param_group_names = {}
     param_groups = {}
 
-    num_layers = len(model.blocks) + 1
+    num_layers = model.num_layers
 
     layer_scales = list(layer_decay**(num_layers - i)
                         for i in range(num_layers + 1))
@@ -38,7 +38,7 @@ def param_groups_lrd(model,
             g_decay = 'decay'
             this_decay = weight_decay
 
-        layer_id = get_layer_id_for_vit(n, num_layers)
+        layer_id = model.get_layer_id(n)
         group_name = 'layer_%d_%s' % (layer_id, g_decay)
 
         if group_name not in param_group_names:
@@ -59,16 +59,3 @@ def param_groups_lrd(model,
         param_groups[group_name]['params'].append(p)
 
     return list(param_groups.values())
-
-
-def get_layer_id_for_vit(name, num_layers):
-    """Assign a parameter with its layer id Following BEiT: https://github.com/
-    microsoft/unilm/blob/master/beit/optim_factory.py#L33."""
-    if name in ['cls_token', 'pos_embed']:
-        return 0
-    elif name.startswith('patch_embed'):
-        return 0
-    elif name.startswith('blocks'):
-        return int(name.split('.')[1]) + 1
-    else:
-        return num_layers
