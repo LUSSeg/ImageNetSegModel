@@ -279,13 +279,13 @@ class ResNet(nn.Module):
         Following BEiT: https://github.com/microsoft/unilm/blob/master/beit/optim_factory.py#L33
         """
         if name.startswith('conv1'):
-            return 0
+            return 0, 0
         elif name.startswith('bn1'):
-            return 0
+            return 0, 0
         elif name.startswith('layer'):
-            return sum(self.layers[:int(name[5]) - 1]) + int(name[7]) + 1
+            return 0, sum(self.layers[:int(name[5]) - 1]) + int(name[7]) + 1
         else:
-            return self.num_layers
+            return 0, self.num_layers
 
 
 def resnet18(args):

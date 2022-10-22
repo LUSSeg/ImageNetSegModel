@@ -13,7 +13,8 @@
 def param_groups_lrd(model,
                      weight_decay=0.05,
                      no_weight_decay_list=[],
-                     layer_decay=.75):
+                     layer_decay=[.75],
+                     layer_multiplier=[1.0]):
     """Parameter groups for layer-wise lr decay Following BEiT: https://github.
 
     com/microsoft/unilm/blob/master/beit/optim_factory.py#L58.
@@ -23,8 +24,11 @@ def param_groups_lrd(model,
 
     num_layers = model.num_layers
 
-    layer_scales = list(layer_decay**(num_layers - i)
-                        for i in range(num_layers + 1))
+    if isinstance(layer_decay, (float, int)):
+        layer_decay = [layer_decay]
+
+    layer_scales = [
+        list(decay**(num_layers - i) for i in range(num_layers + 1)) for decay in layer_decay]
 
     for n, p in model.named_parameters():
         if not p.requires_grad:
@@ -38,11 +42,11 @@ def param_groups_lrd(model,
             g_decay = 'decay'
             this_decay = weight_decay
 
-        layer_id = model.get_layer_id(n)
-        group_name = 'layer_%d_%s' % (layer_id, g_decay)
+        layer_group, layer_id = model.get_layer_id(n)
+        group_name = 'layer_%d_%d_%s' % (layer_group, layer_id, g_decay)
 
         if group_name not in param_group_names:
-            this_scale = layer_scales[layer_id]
+            this_scale = layer_scales[layer_group][layer_id] * layer_multiplier[layer_group]
 
             param_group_names[group_name] = {
                 'lr_scale': this_scale,
