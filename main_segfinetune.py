@@ -29,8 +29,7 @@ from engine_segfinetune import evaluate, train_one_epoch
 from util.datasets import build_dataset
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 from util.pos_embed import interpolate_pos_embed
-
-assert timm.__version__ == '0.3.2'  # version check
+from timm.models.convnext import checkpoint_filter_fn
 
 
 def get_args_parser():
@@ -76,6 +75,12 @@ def get_args_parser():
                         default=0.1,
                         metavar='PCT',
                         help='Drop path rate (default: 0.1)')
+    parser.add_argument('--patch_size',
+                        type=int,
+                        default=4,
+                        help='For convnext/rfconvnext, the numnber of output channels is '
+                        'nb_classes * patch_size * patch_size.'
+                        'https://arxiv.org/pdf/2111.06377.pdf')
 
     # Optimizer parameters
     parser.add_argument('--clip_grad',
@@ -101,8 +106,14 @@ def get_args_parser():
                         'absolute_lr = base_lr * total_batch_size / 256')
     parser.add_argument('--layer_decay',
                         type=float,
-                        default=0.75,
+                        default=[0.75],
+                        nargs="+",
                         help='layer-wise lr decay from ELECTRA/BEiT')
+    parser.add_argument('--layer_multiplier',
+                        type=float,
+                        default=[1.0],
+                        nargs="+",
+                        help='multiplier of learning rate for each group of layers')
     parser.add_argument('--min_lr',
                         type=float,
                         default=1e-6,
@@ -126,12 +137,19 @@ def get_args_parser():
     parser.add_argument('--finetune',
                         default='',
                         help='finetune from checkpoint')
+    parser.add_argument('--pretrained_rfnext',
+                        default='',
+                        help='pretrained weights for RF-Next')
 
     # Dataset parameters
     parser.add_argument('--data_path',
                         default='/datasets01/imagenet_full_size/061417/',
                         type=str,
                         help='dataset path')
+    parser.add_argument('--iteration_one_epoch',
+                        default=-1,
+                        type=int,
+                        help='number of iterations in one epoch')
     parser.add_argument('--nb_classes',
                         default=1000,
                         type=int,
@@ -235,7 +253,7 @@ def main(args):
                                                   num_workers=args.num_workers,
                                                   pin_memory=True,
                                                   drop_last=False)
-
+    args.iteration_one_epoch = len(data_loader_train)
     model = models.__dict__[args.model](args)
 
     if args.finetune and not args.eval:
@@ -262,6 +280,8 @@ def main(args):
         if 'vit' in args.model:
             # interpolate position embedding
             interpolate_pos_embed(model, checkpoint)
+        elif 'convnext' in args.model:
+            checkpoint = checkpoint_filter_fn(checkpoint, model)
 
         # load pre-trained model
         msg = model.load_state_dict(checkpoint, strict=False)
@@ -289,7 +309,7 @@ def main(args):
 
     if args.distributed:
         model = torch.nn.parallel.DistributedDataParallel(
-            model, device_ids=[args.gpu])
+            model, device_ids=[args.gpu], find_unused_parameters=True)
         model_without_ddp = model.module
 
     # build optimizer with layer-wise lr decay (lrd)
@@ -297,7 +317,8 @@ def main(args):
         model_without_ddp,
         args.weight_decay,
         no_weight_decay_list=model_without_ddp.no_weight_decay(),
-        layer_decay=args.layer_decay)
+        layer_decay=args.layer_decay,
+        layer_multiplier=args.layer_multiplier)
     optimizer = torch.optim.AdamW(param_groups, lr=args.lr)
     loss_scaler = NativeScaler()
     criterion = torch.nn.CrossEntropyLoss(

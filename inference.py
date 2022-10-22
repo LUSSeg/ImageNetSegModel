@@ -43,9 +43,18 @@ def parse_args():
                         type=str,
                         default=None,
                         help='the model checkpoint file')
+    parser.add_argument('--pretrained_rfnext',
+                        default='',
+                        help='pretrained weights for RF-Next')
     parser.add_argument('--model',
                         default='vit_small_patch16',
                         help='model architecture')
+    parser.add_argument('--patch_size',
+                        type=int,
+                        default=4,
+                        help='For convnext/rfconvnext, the numnber of output channels is '
+                        'nb_classes * patch_size * patch_size.'
+                        'https://arxiv.org/pdf/2111.06377.pdf')
     parser.add_argument(
         '--max_res',
         default=1000,

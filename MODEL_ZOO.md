@@ -4,6 +4,9 @@
 
 [Finetuning with ResNet](#2)
 
+[Finetuning with RF-ConvNext](#3)
+
+
 <div id="1"></div>
 
 ## Finetuning with ViT
@@ -219,5 +222,198 @@ python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
 --data_path ${IMAGENETS_DIR} \
 --output_dir ${OUTPATH} \
 --dist_eval
+```
+</details>
+
+
+<div id="3"></div>
+
+## Finetuning with RF-ConvNeXt
+
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="bottom">Arch</th>
+<th valign="bottom">Pretraining epochs</th>
+<th valign="bottom">RF-Next mode</th>
+<th valign="bottom">val</th>
+<th valign="bottom">test</th>
+<th valign="bottom">Pretrained</th>
+<th valign="bottom">Finetuned</th>
+<!-- TABLE BODY -->
+<tr>
+<td align="center"><a href="https://arxiv.org/abs/2201.03545">ConvNeXt-T</a></td>
+<td align="center">300</td>
+<td align="center">-</td>
+<td align="center">48.7</td>
+<td align="center">48.8</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/convnext/convnext_tiny_1k_224_ema.pth">model</a></td>
+<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/rfconvnext_tiny/imagenets_sup_convnext_tiny.pth">model</a></td>
+</tr>
+<tr>
+<td align="center"><a href="https://arxiv.org/abs/2206.06637">RF-ConvNeXt-T</a></td>
+<td align="center">300</td>
+<td align="center">rfsingle</td>
+<td align="center">50.7</td>
+<td align="center">50.5</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/convnext/convnext_tiny_1k_224_ema.pth">model</a></td>
+<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/rfconvnext_tiny/imagenets_sup_rfnext_convnext_tiny_rfsingle.pth">model</a></td>
+</tr>
+<tr>
+<td align="center"><a href="https://arxiv.org/abs/2206.06637">RF-ConvNeXt-T</a></td>
+<td align="center">300</td>
+<td align="center">rfmultiple</td>
+<td align="center">50.8</td>
+<td align="center">50.5</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/convnext/convnext_tiny_1k_224_ema.pth">model</a></td>
+<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/rfconvnext_tiny/imagenets_sup_rfnext_convnext_tiny_rfmultiple.pth">model</a></td>
+</tr>
+<tr>
+<td align="center"><a href="https://arxiv.org/abs/2206.06637">RF-ConvNeXt-T</a></td>
+<td align="center">300</td>
+<td align="center">rfmerge</td>
+<td align="center">51.3</td>
+<td align="center">51.1</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/convnext/convnext_tiny_1k_224_ema.pth">model</a></td>
+<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/rfconvnext_tiny/imagenets_sup_rfnext_convnext_tiny_rfmerge.pth">model</a></td>
+</tr>
+</tbody></table>
+
+<details>
+  <summary>Command for ConvNeXt-T</summary>
+  
+```shell
+python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
+--accum_iter 1 \
+--batch_size 32 \
+--model convnext_tiny \
+--patch_size 4 \
+--finetune convnext_tiny_1k_224_ema.pth \
+--epochs 100 \
+--nb_classes 920 \
+--blr 2.5e-4 --layer_decay 0.6 \
+--weight_decay 0.05 --drop_path 0.2  \
+--data_path ${IMAGENETS_DIR} \
+--output_dir ${OUTPATH} \
+--dist_eval
+```
+</details>
+
+Before training RF-ConvNext, 
+please search dilation rates with the mode of rfsearch. 
+
+For rfmultiple and rfsingle, please set `pretrained_rfnext` 
+as the weights trained in rfsearch. 
+
+For rfmerge, we initilize the model with weights in rfmultiple and only finetune `seg_norm`, `seg_head` and `rfconvs` that have change dilation rates. Please set `pretrained_rfnext` 
+as the weights trained in rfmutilple. 
+<details>
+  <summary>Command for RF-ConvNeXt-T (rfsearch)</summary>
+  
+```shell
+python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
+--accum_iter 1 \
+--batch_size 32 \
+--model rfconvnext_tiny_rfsearch \
+--patch_size 4 \
+--finetune convnext_tiny_1k_224_ema.pth \
+--pretrained_rfnext convnext_tiny_1k_224_ema.pth \
+--epochs 100 \
+--nb_classes 920 \
+--blr 2.5e-4 --layer_decay 0.6 0.9 --layer_multiplier 1.0 10.0 \
+--weight_decay 0.05 --drop_path 0.2  \
+--data_path ${IMAGENETS_DIR} \
+--output_dir ${OUTPATH} \
+--dist_eval
+```
+</details>
+
+<details>
+  <summary>Command for RF-ConvNeXt-T (rfsingle)</summary>
+
+```shell
+python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
+--accum_iter 1 \
+--batch_size 32 \
+--model rfconvnext_tiny_rfsingle \
+--patch_size 4 \
+--finetune convnext_tiny_1k_224_ema.pth \
+--pretrained_rfnext ${OUTPATH_OF_RFSEARCH}/checkpoint-99.pth \
+--epochs 100 \
+--nb_classes 920 \
+--blr 2.5e-4 --layer_decay 0.6 0.9 --layer_multiplier 1.0 10.0 \
+--weight_decay 0.05 --drop_path 0.2  \
+--data_path ${IMAGENETS_DIR} \
+--output_dir ${OUTPATH} \
+--dist_eval
+
+python inference.py --model rfconvnext_tiny_rfsingle \
+--patch_size 4 \
+--nb_classes 920 \
+--output_dir ${OUTPATH}/predictions \
+--data_path ${IMAGENETS_DIR} \
+--pretrained_rfnext ${OUTPATH_OF_RFSEARCH}/checkpoint-99.pth \
+--finetune ${OUTPATH}/checkpoint-99.pth \
+--mode validation
+```
+</details>
+
+<details>
+  <summary>Command for RF-ConvNeXt-T (rfmultiple)</summary>
+
+```shell
+python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
+--accum_iter 1 \
+--batch_size 32 \
+--model rfconvnext_tiny_rfmultiple \
+--patch_size 4 \
+--finetune convnext_tiny_1k_224_ema.pth \
+--pretrained_rfnext ${OUTPATH_OF_RFSEARCH}/checkpoint-99.pth \
+--epochs 100 \
+--nb_classes 920 \
+--blr 2.5e-4 --layer_decay 0.55 0.9 --layer_multiplier 1.0 10.0 \
+--weight_decay 0.05 --drop_path 0.1  \
+--data_path ${IMAGENETS_DIR} \
+--output_dir ${OUTPATH} \
+--dist_eval
+
+python inference.py --model rfconvnext_tiny_rfmultiple \
+--patch_size 4 \
+--nb_classes 920 \
+--output_dir ${OUTPATH}/predictions \
+--data_path ${IMAGENETS_DIR} \
+--pretrained_rfnext ${OUTPATH_OF_RFSEARCH}/checkpoint-99.pth \
+--finetune ${OUTPATH}/checkpoint-99.pth \
+--mode validation
+```
+</details>
+
+
+<details>
+  <summary>Command for RF-ConvNeXt-T (rfmerge)</summary>
+
+```shell
+python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
+--accum_iter 1 \
+--batch_size 32 \
+--model rfconvnext_tiny_rfmerge \
+--patch_size 4 \
+--pretrained_rfnext ${OUTPATH_OF_RFMULTIPLE}/checkpoint-99.pth \
+--epochs 100 \
+--nb_classes 920 \
+--blr 2.5e-4 --layer_decay 0.55 1.0 --layer_multiplier 1.0 10.0 \
+--weight_decay 0.05 --drop_path 0.2  \
+--data_path ${IMAGENETS_DIR} \
+--output_dir ${OUTPATH} \
+--dist_eval
+
+python inference.py --model rfconvnext_tiny_rfmerge \
+--patch_size 4 \
+--nb_classes 920 \
+--output_dir ${OUTPATH}/predictions \
+--data_path ${IMAGENETS_DIR} \
+--pretrained_rfnext ${OUTPATH_OF_RFMULTIPLE}/checkpoint-99.pth \
+--finetune ${OUTPATH}/checkpoint-99.pth \
+--mode validation
 ```
 </details>
