@@ -181,7 +181,7 @@ python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
 </tr>
 </tbody></table>
 
-`D16` means the output stride is 16 with dilation=2 in the last stage.
+`D16` means the output stride is 16 with dilation=2 in the last stage. This result is better than the results reported in the paper thanks to the new training scripts.
 
 ### <a href="https://arxiv.org/abs/2206.05184">Large-scale Unsupervised Semantic Segmentation (PASS)</a>
 <details>
