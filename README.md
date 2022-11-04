@@ -24,6 +24,7 @@ python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
 --output_dir ${OUTPATH} \
 --dist_eval
 ```
+Note: To use one GPU for training,  you can change `--nproc_per_node=8` to `--nproc_per_node=1` and change `--accum_iter 1` to `--accum_iter 8`.
 - Get the zip file for testing set. You can submit it to our [online server](https://lusseg.github.io/).
 ```
 python inference.py --model vit_small_patch16 \
