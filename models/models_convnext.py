@@ -55,16 +55,16 @@ class ConvNeXt(timm.models.convnext.ConvNeXt):
     
     def get_layer_id(self, name):
         if name in ("cls_token", "mask_token", "pos_embed"):
-            return 0, 0
+            return (0, 0)
         elif name.startswith("stem"):
-            return 0, 0
+            return (0, 0)
         elif name.startswith("stages") and 'downsample' in name:
             stage_id = int(name.split('.')[1])
             if stage_id == 0:
                 layer_id = 0
             else:
                 layer_id = sum(self.depths[:stage_id]) + stage_id
-            return 0, layer_id
+            return (0, layer_id)
         elif name.startswith("stages") and 'downsample' not in name:
             stage_id = int(name.split('.')[1])
             block_id = int(name.split('.')[3])
@@ -72,9 +72,9 @@ class ConvNeXt(timm.models.convnext.ConvNeXt):
                 layer_id = block_id + 1
             else:
                 layer_id = sum(self.depths[:stage_id]) + stage_id + block_id + 1
-            return 0, layer_id
+            return (0, layer_id)
         else:
-            return 0, self.num_layers
+            return (0, self.num_layers)
 
 
 def convnext_tiny(args):

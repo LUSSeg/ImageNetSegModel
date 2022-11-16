@@ -108,12 +108,20 @@ def get_args_parser():
                         type=float,
                         default=[0.75],
                         nargs="+",
-                        help='layer-wise lr decay from ELECTRA/BEiT')
+                        help='layer-wise lr decay from ELECTRA/BEiT.'
+                        'For each layer, the function get_layer_id in utils.lr_decay '
+                        'returns (layer_group, layer_id). '
+                        'According to the layer_group, different parameters are grouped, '
+                        'and the layer_decay[layer_group] is used as the decay rate for different groups.')
     parser.add_argument('--layer_multiplier',
                         type=float,
                         default=[1.0],
                         nargs="+",
-                        help='multiplier of learning rate for each group of layers')
+                        help='The learning rate multipliers for different layers. '
+                        'For each layer, the function get_layer_id in utils.lr_decay '
+                        'returns (layer_group, layer_id). '
+                        'According to the layer_group, different parameters are grouped, '
+                        'and the learning rate of each group is lr = lr * layer_multiplier[layer_group].')
     parser.add_argument('--min_lr',
                         type=float,
                         default=1e-6,

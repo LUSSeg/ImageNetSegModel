@@ -38,6 +38,9 @@ class RFConvNeXt(timm.models.rfconvnext.RFConvNeXt):
         
     
     def get_kernel_size_changed(self):
+        """
+        To get rfconvs whose dilate rates are changed. 
+        """
         for i, stage in enumerate(self.stages):
             for j, block in enumerate(stage.blocks):
                 if block.conv_dw.dilation[0] > 1 or block.conv_dw.kernel_size[0] > 13:
@@ -51,10 +54,20 @@ class RFConvNeXt(timm.models.rfconvnext.RFConvNeXt):
                     self.rf_change.append(self.stages[i].blocks[j].conv_dw)
 
     def freeze(self):
+        """
+        In the mode of rfmerge, 
+        we initilize the model with weights in rfmultiple and 
+        only finetune seg_norm, seg_head and rfconvs whose dilate rates are changed. 
+        The other parts of the network are freezed during funetuning.
+
+        Note that this freezing operation may be not required for other tasks.
+        """
         if len(self.rf_change_name) == 0:
             self.get_kernel_size_changed()
+        # finetune the rfconvs whose dilate rates are changed
         for n, p in self.named_parameters():
             p.requires_grad = True if n in self.rf_change_name else False
+        # finetune the seg_norm, seg_head
         for n, p in self.seg_head.named_parameters():
             p.requires_grad = True
         for n, p in self.seg_norm.named_parameters():
@@ -84,9 +97,9 @@ class RFConvNeXt(timm.models.rfconvnext.RFConvNeXt):
     
     def get_layer_id(self, name):
         if name in ("cls_token", "mask_token", "pos_embed"):
-            return 0, 0
+            return (0, 0)
         elif name.startswith("stem"):
-            return 0, 0
+            return (0, 0)
         elif name.startswith("stages") and 'downsample' in name:
             stage_id = int(name.split('.')[1])
             if stage_id == 0:
@@ -95,8 +108,8 @@ class RFConvNeXt(timm.models.rfconvnext.RFConvNeXt):
                 layer_id = sum(self.depths[:stage_id]) + stage_id
             
             if name.endswith('sample_weights') or name in self.rf_change_name:
-                return 1, layer_id
-            return 0, layer_id
+                return (1, layer_id)
+            return (0, layer_id)
         elif name.startswith("stages") and 'downsample' not in name:
             stage_id = int(name.split('.')[1])
             block_id = int(name.split('.')[3])
@@ -106,10 +119,10 @@ class RFConvNeXt(timm.models.rfconvnext.RFConvNeXt):
                 layer_id = sum(self.depths[:stage_id]) + stage_id + block_id + 1
 
             if name.endswith('sample_weights') or name in self.rf_change_name:
-                return 1, layer_id
-            return 0, layer_id
+                return (1, layer_id)
+            return (0, layer_id)
         else:
-            return 0, self.num_layers
+            return (0, self.num_layers)
 
 
 def rfconvnext_tiny_rfsearch(args):

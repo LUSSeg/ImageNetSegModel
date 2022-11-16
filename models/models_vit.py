@@ -91,13 +91,13 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         """Assign a parameter with its layer id Following BEiT: https://github.com/
         microsoft/unilm/blob/master/beit/optim_factory.py#L33."""
         if name in ['cls_token', 'pos_embed']:
-            return 0, 0
+            return (0, 0)
         elif name.startswith('patch_embed'):
-            return 0, 0
+            return (0, 0)
         elif name.startswith('blocks'):
-            return 0, int(name.split('.')[1]) + 1
+            return (0, int(name.split('.')[1]) + 1)
         else:
-            return 0, self.num_layers
+            return (0, self.num_layers)
 
 
 class PatchEmbed(nn.Module):
