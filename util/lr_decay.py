@@ -42,7 +42,20 @@ def param_groups_lrd(model,
             g_decay = 'decay'
             this_decay = weight_decay
 
-        layer_group, layer_id = model.get_layer_id(n)
+        """
+        For each layer, the get_layer_id returns (layer_group, layer_id). 
+        According to the layer_group, different parameters are grouped, 
+        and layers in different groups use different decay rates.
+
+        If only a layer_id is returned, the layer_group are set to 0 by default.
+        """
+        layer_group_id = model.get_layer_id(n)
+        if isinstance(layer_id, (list, tuple)):
+            layer_group, layer_id = layer_group_id
+        elif isinstance(layer_id, int):
+            layer_group, layer_id = 0, layer_group_id
+        else:
+            raise NotImplementedError()
         group_name = 'layer_%d_%d_%s' % (layer_group, layer_id, g_decay)
 
         if group_name not in param_group_names:

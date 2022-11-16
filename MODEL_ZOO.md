@@ -305,8 +305,13 @@ please search dilation rates with the mode of rfsearch.
 For rfmultiple and rfsingle, please set `pretrained_rfnext` 
 as the weights trained in rfsearch. 
 
-For rfmerge, we initilize the model with weights in rfmultiple and only finetune `seg_norm`, `seg_head` and `rfconvs` that have change dilation rates. Please set `pretrained_rfnext` 
+For rfmerge, we initilize the model with weights in rfmultiple and only finetune `seg_norm`, `seg_head` and `rfconvs` whose dilate rates are changed. 
+The othe parts of the network are freezed.
+Please set `pretrained_rfnext` 
 as the weights trained in rfmutilple. 
+
+**Note that this freezing operation in rfmerge may be not required for other tasks.**
+
 <details>
   <summary>Command for RF-ConvNeXt-T (rfsearch)</summary>
   
@@ -317,7 +322,6 @@ python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
 --model rfconvnext_tiny_rfsearch \
 --patch_size 4 \
 --finetune convnext_tiny_1k_224_ema.pth \
---pretrained_rfnext convnext_tiny_1k_224_ema.pth \
 --epochs 100 \
 --nb_classes 920 \
 --blr 2.5e-4 --layer_decay 0.6 0.9 --layer_multiplier 1.0 10.0 \
