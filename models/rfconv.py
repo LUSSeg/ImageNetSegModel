@@ -1,12 +1,9 @@
-from cmath import isnan
-import enum
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import collections.abc as container_abcs
 from itertools import repeat
-import copy
-from .layers import get_padding
+from timm.models.layers import get_padding
 
 def _ntuple(n):
     def parse(x):
@@ -16,7 +13,6 @@ def _ntuple(n):
     return parse
 
 
-_single = _ntuple(1)
 _pair = _ntuple(2)
 
 
@@ -160,6 +156,7 @@ class RFConv2d(nn.Conv2d):
         elif self.rf_mode == 'rfsingle':
             self.estimate()
             self.max_search_step = 0
+            del self.sample_weights
         elif self.rf_mode == 'rfmultiple':
             self.estimate()
             self.expand()
@@ -168,6 +165,7 @@ class RFConv2d(nn.Conv2d):
             self.max_search_step = 0
         elif self.rf_mode == 'rfmerge':
             self.max_search_step = 0
+            del self.sample_weights
         else:
             raise NotImplementedError()
         
