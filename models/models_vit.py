@@ -89,7 +89,14 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
 
     def get_layer_id(self, name):
         """Assign a parameter with its layer id Following BEiT: https://github.com/
-        microsoft/unilm/blob/master/beit/optim_factory.py#L33."""
+        microsoft/unilm/blob/master/beit/optim_factory.py#L33.
+        
+        For each layer, the get_layer_id returns (layer_group, layer_id). 
+        According to the layer_group, different parameters are grouped, 
+        and layers in different groups use different decay rates.
+
+        If only the layer_id is returned, the layer_group are set to 0 by default.
+        """
         if name in ['cls_token', 'pos_embed']:
             return (0, 0)
         elif name.startswith('patch_embed'):

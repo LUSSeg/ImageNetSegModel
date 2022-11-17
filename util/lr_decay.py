@@ -47,7 +47,7 @@ def param_groups_lrd(model,
         According to the layer_group, different parameters are grouped, 
         and layers in different groups use different decay rates.
 
-        If only a layer_id is returned, the layer_group are set to 0 by default.
+        If only the layer_id is returned, the layer_group are set to 0 by default.
         """
         layer_group_id = model.get_layer_id(n)
         if isinstance(layer_id, (list, tuple)):
