@@ -1,13 +1,13 @@
 from functools import partial
 
-import timm.models.rfconvnext
+import models.rfconvnext as rfconvnext
 from collections import OrderedDict
 import torch
 import torch.nn as nn
 from timm.models.layers import trunc_normal_
 
 
-class RFConvNeXt(timm.models.rfconvnext.RFConvNeXt):
+class RFConvNeXt(rfconvnext.RFConvNeXt):
     """Vision Transformer with support for semantic seg."""
     def __init__(self, patch_size=4, **kwargs):
         norm_layer = kwargs.pop('norm_layer')
@@ -136,7 +136,7 @@ class RFConvNeXt(timm.models.rfconvnext.RFConvNeXt):
 
 def rfconvnext_tiny_rfsearch(args):
     search_cfgs = dict(
-        samples=3,
+        num_branches=3,
         expand_rate=0.5,
         max_dilation=None,
         min_dilation=1,
@@ -160,7 +160,7 @@ def rfconvnext_tiny_rfsearch(args):
 
 def rfconvnext_tiny_rfmultiple(args):
     search_cfgs = dict(
-        samples=3,
+        num_branches=3,
         expand_rate=0.5,
         max_dilation=None,
         min_dilation=1,
@@ -181,7 +181,7 @@ def rfconvnext_tiny_rfmultiple(args):
 
 def rfconvnext_tiny_rfsingle(args):
     search_cfgs = dict(
-        samples=3,
+        num_branches=3,
         expand_rate=0.5,
         max_dilation=None,
         min_dilation=1,
@@ -202,7 +202,7 @@ def rfconvnext_tiny_rfsingle(args):
 
 def rfconvnext_tiny_rfmerge(args):
     search_cfgs = dict(
-        samples=3,
+        num_branches=3,
         expand_rate=0.5,
         max_dilation=None,
         min_dilation=1,

@@ -5,6 +5,7 @@ import collections.abc as container_abcs
 from itertools import repeat
 from timm.models.layers import get_padding
 
+
 def _ntuple(n):
     def parse(x):
         if isinstance(x, container_abcs.Iterable):
@@ -16,36 +17,36 @@ def _ntuple(n):
 _pair = _ntuple(2)
 
 
-def value_crop(d, mind, maxd):
-    if mind is not None:
-        if d < mind:
-            d = mind
-    if maxd is not None:
-        if d > maxd:
-            d = maxd
-    return d
+def value_crop(dilation, min_dilation, max_dilation):
+    if min_dilation is not None:
+        if dilation < min_dilation:
+            dilation = min_dilation
+    if max_dilation is not None:
+        if dilation > max_dilation:
+            dilation = max_dilation
+    return dilation
 
 
-def rf_expand(d, expand_rate, samples, mind=1, maxd=None):
+def rf_expand(dilation, expand_rate, num_branches, min_dilation=1, max_dilation=None):
     large_rates = []
     small_rates = []
-    for _ in range(samples//2):
+    for _ in range(num_branches//2):
         large_rates.append(tuple([value_crop(
-            int(round((1 + expand_rate) * d[0])), mind, maxd),
+            int(round((1 + expand_rate) * dilation[0])), min_dilation, max_dilation),
             value_crop(
-            int(round((1 + expand_rate) * d[1])), mind, maxd)]
+            int(round((1 + expand_rate) * dilation[1])), min_dilation, max_dilation)]
         ))
         small_rates.append(tuple([value_crop(
-            int(round((1 - expand_rate) * d[0])), mind, maxd),
+            int(round((1 - expand_rate) * dilation[0])), min_dilation, max_dilation),
             value_crop(
-            int(round((1 - expand_rate) * d[1])), mind, maxd)]))
+            int(round((1 - expand_rate) * dilation[1])), min_dilation, max_dilation)]))
 
     small_rates.reverse()
 
-    if samples % 2 == 0:
+    if num_branches % 2 == 0:
         rate_list = small_rates + large_rates
     else:
-        rate_list = small_rates + [d] + large_rates
+        rate_list = small_rates + [dilation] + large_rates
 
     unique_rate_list = list(set(rate_list))
     unique_rate_list.sort(key=rate_list.index)
@@ -64,10 +65,10 @@ class RFConv2d(nn.Conv2d):
                  groups=1,
                  bias=True,
                  padding_mode='zeros',
-                 samples=3,
+                 num_branches=3,
                  expand_rate=0.5,
-                 max_dilation=None,
                  min_dilation=1,
+                 max_dilation=None,
                  init_weight=0.01,
                  search_interval=1250,
                  max_search_step=0,
@@ -129,14 +130,14 @@ class RFConv2d(nn.Conv2d):
         )
         self.rf_mode = rf_mode
         self.pretrained = pretrained
-        self.samples = samples
+        self.num_branches = num_branches
         self.max_dilation = max_dilation
         self.min_dilation = min_dilation
         self.expand_rate = expand_rate
         self.init_weight = init_weight
         self.search_interval = search_interval
         self.max_search_step = max_search_step
-        self.sample_weights = nn.Parameter(torch.Tensor(self.samples))
+        self.sample_weights = nn.Parameter(torch.Tensor(self.num_branches))
         self.register_buffer('counter', torch.zeros(1))
         self.register_buffer('current_search_step', torch.zeros(1))
         self.register_buffer('rates', torch.ones(size=(3, 2), dtype=torch.int32))
@@ -189,10 +190,10 @@ class RFConv2d(nn.Conv2d):
         return norm_w
 
     def forward(self, x):
-        norm_w = self.normlize(self.sample_weights[:self.num_rates.item()])
         if self.num_rates.item() == 1:
             return super().forward(x)
         else:
+            norm_w = self.normlize(self.sample_weights[:self.num_rates.item()])
             xx = [
                 self._conv_forward_dilation(x, (self.rates[i][0].item(), self.rates[i][1].item()))
                 * norm_w[i] for i in range(self.num_rates.item())
@@ -243,7 +244,9 @@ class RFConv2d(nn.Conv2d):
 
     def expand(self):
         rates = rf_expand(self.dilation, self.expand_rate,
-                          self.samples, mind=self.min_dilation, maxd=self.max_dilation)
+                    self.num_branches, 
+                    min_dilation=self.min_dilation, 
+                    max_dilation=self.max_dilation)
         for i, rate in enumerate(rates):
             self.rates[i] = torch.FloatTensor([rate[0], rate[1]])
         self.num_rates[0] = len(rates)
