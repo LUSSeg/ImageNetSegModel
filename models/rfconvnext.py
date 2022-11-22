@@ -1,33 +1,109 @@
-""" ConvNeXt
-
-Paper: `A ConvNet for the 2020s` - https://arxiv.org/pdf/2201.03545.pdf
-
-Original code and weights from https://github.com/facebookresearch/ConvNeXt, original copyright below
-
-Model defs atto, femto, pico, nano and _ols / _hnf variants are timm specific.
-
-Modifications and additions for timm hacked together by / Copyright 2022, Ross Wightman
+""" RFConvNeXt
+Paper: RF-Next: Efficient Receptive Field Search for Convolutional Neural Networks
+    https://arxiv.org/abs/2206.06637
+    
+Modified from https://github.com/rwightman/pytorch-image-models/blob/main/timm/models/convnext.py
 """
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-# This source code is licensed under the MIT license
 from collections import OrderedDict
 from functools import partial
 
 import torch
 import torch.nn as nn
 
+from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.models.helpers import named_apply, build_model_with_cfg, checkpoint_seq
 from timm.models.layers import trunc_normal_, SelectAdaptivePool2d, DropPath, ConvMlp, Mlp, LayerNorm2d,\
     create_conv2d, make_divisible, get_padding
-from models.rfconv import RFConv2d
+from .rfconv import RFConv2d
 import os
 
-__all__ = ['RFConvNeXt']  # model_registry will add each entrypoint fn to this
+__all__ = ['RFConvNeXt']
+
+
+def _cfg(url='', **kwargs):
+    return {
+        'url': url,
+        'num_classes': 1000, 'input_size': (3, 224, 224), 'pool_size': (7, 7),
+        'crop_pct': 0.875, 'interpolation': 'bicubic',
+        'mean': IMAGENET_DEFAULT_MEAN, 'std': IMAGENET_DEFAULT_STD,
+        'first_conv': 'stem.0', 'classifier': 'head.fc',
+        **kwargs
+    }
+
+
+default_cfgs = dict(
+    convnext_tiny=_cfg(url="https://dl.fbaipublicfiles.com/convnext/convnext_tiny_1k_224_ema.pth"),
+    convnext_small=_cfg(url="https://dl.fbaipublicfiles.com/convnext/convnext_small_1k_224_ema.pth"),
+    convnext_base=_cfg(url="https://dl.fbaipublicfiles.com/convnext/convnext_base_1k_224_ema.pth"),
+    convnext_large=_cfg(url="https://dl.fbaipublicfiles.com/convnext/convnext_large_1k_224_ema.pth"),
+
+    # timm specific variants
+    convnext_atto=_cfg(url=''),
+    convnext_atto_ols=_cfg(url=''),
+    convnext_femto=_cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-rsb-weights/convnext_femto_d1-d71d5b4c.pth',
+        test_input_size=(3, 288, 288), test_crop_pct=0.95),
+    convnext_femto_ols=_cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-rsb-weights/convnext_femto_ols_d1-246bf2ed.pth',
+        test_input_size=(3, 288, 288), test_crop_pct=0.95),
+    convnext_pico=_cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-rsb-weights/convnext_pico_d1-10ad7f0d.pth',
+        test_input_size=(3, 288, 288), test_crop_pct=0.95),
+    convnext_pico_ols=_cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-rsb-weights/convnext_pico_ols_d1-611f0ca7.pth',
+        crop_pct=0.95, test_input_size=(3, 288, 288), test_crop_pct=1.0),
+    convnext_nano=_cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-rsb-weights/convnext_nano_d1h-7eb4bdea.pth',
+        crop_pct=0.95, test_input_size=(3, 288, 288), test_crop_pct=1.0),
+    convnext_nano_ols=_cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-rsb-weights/convnext_nano_ols_d1h-ae424a9a.pth',
+        crop_pct=0.95, test_input_size=(3, 288, 288), test_crop_pct=1.0),
+    convnext_tiny_hnf=_cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-rsb-weights/convnext_tiny_hnf_a2h-ab7e9df2.pth',
+        crop_pct=0.95, test_input_size=(3, 288, 288), test_crop_pct=1.0),
+
+    convnext_tiny_in22ft1k=_cfg(
+        url='https://dl.fbaipublicfiles.com/convnext/convnext_tiny_22k_1k_224.pth'),
+    convnext_small_in22ft1k=_cfg(
+        url='https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_224.pth'),
+    convnext_base_in22ft1k=_cfg(
+        url='https://dl.fbaipublicfiles.com/convnext/convnext_base_22k_1k_224.pth'),
+    convnext_large_in22ft1k=_cfg(
+        url='https://dl.fbaipublicfiles.com/convnext/convnext_large_22k_1k_224.pth'),
+    convnext_xlarge_in22ft1k=_cfg(
+        url='https://dl.fbaipublicfiles.com/convnext/convnext_xlarge_22k_1k_224_ema.pth'),
+
+    convnext_tiny_384_in22ft1k=_cfg(
+        url='https://dl.fbaipublicfiles.com/convnext/convnext_tiny_22k_1k_384.pth',
+        input_size=(3, 384, 384), pool_size=(12, 12), crop_pct=1.0),
+    convnext_small_384_in22ft1k=_cfg(
+        url='https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth',
+        input_size=(3, 384, 384), pool_size=(12, 12), crop_pct=1.0),
+    convnext_base_384_in22ft1k=_cfg(
+        url='https://dl.fbaipublicfiles.com/convnext/convnext_base_22k_1k_384.pth',
+        input_size=(3, 384, 384), pool_size=(12, 12), crop_pct=1.0),
+    convnext_large_384_in22ft1k=_cfg(
+        url='https://dl.fbaipublicfiles.com/convnext/convnext_large_22k_1k_384.pth',
+        input_size=(3, 384, 384), pool_size=(12, 12), crop_pct=1.0),
+    convnext_xlarge_384_in22ft1k=_cfg(
+        url='https://dl.fbaipublicfiles.com/convnext/convnext_xlarge_22k_1k_384_ema.pth',
+        input_size=(3, 384, 384), pool_size=(12, 12), crop_pct=1.0),
+
+    convnext_tiny_in22k=_cfg(
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_tiny_22k_224.pth", num_classes=21841),
+    convnext_small_in22k=_cfg(
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_224.pth", num_classes=21841),
+    convnext_base_in22k=_cfg(
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_base_22k_224.pth", num_classes=21841),
+    convnext_large_in22k=_cfg(
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_large_22k_224.pth", num_classes=21841),
+    convnext_xlarge_in22k=_cfg(
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_xlarge_22k_224.pth", num_classes=21841),
+)
 
 
 default_search_cfg = dict(
-    samples=3,
+    num_branches=3,
     expand_rate=0.5,
     max_dilation=None,
     min_dilation=1,
@@ -303,7 +379,8 @@ class RFConvNeXt(nn.Module):
         else:
             checkpoint = torch.load(pretrained_weights, map_location='cpu')
             checkpoint = checkpoint_filter_fn(checkpoint, self)
-
+            # Remove the prefix in checkpint, e.g., 'backbone' and 'module', 
+            # to guarantee the matching between 'checkpoint' and 'model.state_dict'.            
             checkpoint = {k.replace('module.', ''): v for k, v in checkpoint.items()}
             checkpoint = {k.replace('backbone.', ''): v for k, v in checkpoint.items()}
             for name in list(checkpoint.keys()):
@@ -312,17 +389,20 @@ class RFConvNeXt(nn.Module):
                     print(f"RF-Next: Removing key {name} from pretrained checkpoint")
                     del checkpoint[name]
 
+            # Remove the parameters with mismatched shape from checkpoint         
             for name, module in self.named_parameters():
                 if name in checkpoint and module.shape != checkpoint[name].shape:
                     print(f"RF-Next: Removing key {name} from pretrained checkpoint")
                     del checkpoint[name]
-            
+            # Load the pretrained weights for a rfconv. 
+            # The pretarined weights are obtained after rfseach.
             msg = self.load_state_dict(checkpoint, strict=False)
             missing_keys = list(msg.missing_keys)
             missing_keys = list(filter(lambda x: not x.endswith('.counter') and not x.endswith('.current_search_step'), missing_keys))
             print('RF-Next: RF-Next init, missing keys: {}'.format(missing_keys))
 
         print('RF-Next: convert rfconv.')
+        # Convert conv to rfconv
         def convert_rfconv(module, prefix):
             module_output = module
             if isinstance(module, RFConv2d):
@@ -332,6 +412,8 @@ class RFConvNeXt(nn.Module):
                     kernel = module.kernel_size
                 if checkpoint is not None:
                     module_pretrained = dict()
+                    # Load the pretrained weights for a rfconv. 
+                    # The pretarined weights are obtained after rfseach.
                     for k in checkpoint.keys():
                         if k.startswith(prefix):
                             module_pretrained[k.replace('{}.'.format(prefix), '')] = checkpoint[k]
@@ -359,6 +441,7 @@ class RFConvNeXt(nn.Module):
                 fullname = name
                 if prefix != '':
                     fullname = prefix + '.' + name
+                    # Replace the conv with rfconv。
                 module_output.add_module(name, convert_rfconv(child, fullname))
             del module
             return module_output
@@ -366,6 +449,7 @@ class RFConvNeXt(nn.Module):
         convert_rfconv(self, '')
 
         if self.rf_mode == 'rfmerge':
+            # Show the kernel sizes after rfmerge。
             rfmerge = dict()
             for name, module in self.named_modules():
                 if isinstance(module, RFConv2d):
@@ -472,4 +556,22 @@ def _create_rfconvnext(variant, pretrained=False, **kwargs):
 def rfconvnext_tiny(pretrained=False, **kwargs):
     model_args = dict(depths=(3, 3, 9, 3), dims=(96, 192, 384, 768), **kwargs)
     model = _create_rfconvnext('convnext_tiny', pretrained=pretrained, **model_args)
+    return model
+
+
+def rfconvnext_small(pretrained=False, **kwargs):
+    model_args = dict(depths=[3, 3, 27, 3], dims=[96, 192, 384, 768], **kwargs)
+    model = _create_rfconvnext('convnext_small', pretrained=pretrained, **model_args)
+    return model
+
+
+def rfconvnext_base(pretrained=False, **kwargs):
+    model_args = dict(depths=[3, 3, 27, 3], dims=[128, 256, 512, 1024], **kwargs)
+    model = _create_rfconvnext('convnext_base', pretrained=pretrained, **model_args)
+    return model
+
+
+def rfconvnext_large(pretrained=False, **kwargs):
+    model_args = dict(depths=[3, 3, 27, 3], dims=[192, 384, 768, 1536], **kwargs)
+    model = _create_rfconvnext('convnext_large', pretrained=pretrained, **model_args)
     return model

@@ -50,9 +50,9 @@ def param_groups_lrd(model,
         If only the layer_id is returned, the layer_group are set to 0 by default.
         """
         layer_group_id = model.get_layer_id(n)
-        if isinstance(layer_id, (list, tuple)):
+        if isinstance(layer_group_id, (list, tuple)):
             layer_group, layer_id = layer_group_id
-        elif isinstance(layer_id, int):
+        elif isinstance(layer_group_id, int):
             layer_group, layer_id = 0, layer_group_id
         else:
             raise NotImplementedError()
