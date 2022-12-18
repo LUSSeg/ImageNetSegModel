@@ -239,6 +239,7 @@ python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
 <th valign="bottom">val</th>
 <th valign="bottom">test</th>
 <th valign="bottom">Pretrained</th>
+<th valign="bottom">Searched</th>
 <th valign="bottom">Finetuned</th>
 <!-- TABLE BODY -->
 <tr>
@@ -248,7 +249,8 @@ python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
 <td align="center">48.7</td>
 <td align="center">48.8</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/convnext/convnext_tiny_1k_224_ema.pth">model</a></td>
-<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/rfconvnext_tiny/imagenets_sup_convnext_tiny.pth">model</a></td>
+<td align="center">-</td>
+<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/convnext/imagenets_sup_convnext_p4.pth">model</a></td>
 </tr>
 <tr>
 <td align="center"><a href="https://arxiv.org/abs/2206.06637">RF-ConvNeXt-T</a></td>
@@ -257,7 +259,8 @@ python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
 <td align="center">50.7</td>
 <td align="center">50.5</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/convnext/convnext_tiny_1k_224_ema.pth">model</a></td>
-<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/rfconvnext_tiny/imagenets_sup_rfnext_convnext_tiny_rfsingle.pth">model</a></td>
+<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/convnext/imagenets_sup_rfconvnext-rfsearch_p4.pth">model</a></td>
+<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/convnext/imagenets_sup_rfconvnext-rfsingle_p4.pth">model</a></td>
 </tr>
 <tr>
 <td align="center"><a href="https://arxiv.org/abs/2206.06637">RF-ConvNeXt-T</a></td>
@@ -266,7 +269,8 @@ python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
 <td align="center">50.8</td>
 <td align="center">50.5</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/convnext/convnext_tiny_1k_224_ema.pth">model</a></td>
-<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/rfconvnext_tiny/imagenets_sup_rfnext_convnext_tiny_rfmultiple.pth">model</a></td>
+<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/convnext/imagenets_sup_rfconvnext-rfsearch_p4.pth">model</a></td>
+<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/convnext/imagenets_sup_rfconvnext-rfmultiple_p4.pth">model</a></td>
 </tr>
 <tr>
 <td align="center"><a href="https://arxiv.org/abs/2206.06637">RF-ConvNeXt-T</a></td>
@@ -275,7 +279,8 @@ python -m torch.distributed.launch --nproc_per_node=8 main_segfinetune.py \
 <td align="center">51.3</td>
 <td align="center">51.1</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/convnext/convnext_tiny_1k_224_ema.pth">model</a></td>
-<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/rfconvnext_tiny/imagenets_sup_rfnext_convnext_tiny_rfmerge.pth">model</a></td>
+<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/convnext/imagenets_sup_rfconvnext-rfsearch_p4.pth">model</a></td>
+<td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/convnext/imagenets_sup_rfconvnext-rfmerge_p4.pth">model</a></td>
 </tr>
 </tbody></table>
 
