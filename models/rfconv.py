@@ -157,7 +157,7 @@ class RFConv2d(nn.Conv2d):
         elif self.rf_mode == 'rfsingle':
             self.estimate()
             self.max_search_step = 0
-            del self.sample_weights
+            self.sample_weights.requires_grad = False
         elif self.rf_mode == 'rfmultiple':
             self.estimate()
             self.expand()
@@ -166,7 +166,7 @@ class RFConv2d(nn.Conv2d):
             self.max_search_step = 0
         elif self.rf_mode == 'rfmerge':
             self.max_search_step = 0
-            del self.sample_weights
+            self.sample_weights.requires_grad = False
         else:
             raise NotImplementedError()
         
