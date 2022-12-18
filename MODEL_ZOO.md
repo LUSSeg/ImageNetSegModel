@@ -30,7 +30,7 @@
 <td align="center">SSL</td>
 <td align="center">38.3</td>
 <td align="center">37.0</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/mae/finetune/mae_finetuned_vit_base.pth">model</a></td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/mae/finetune/mae_pretrain_vit_base.pth">model</a></td>
 <td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/vit/imagenets_ssl_mae_vit_base.pth">model</a></td>
 </tr>
 <td align="center"><a href="https://arxiv.org/abs/2111.06377">MAE</a></td>
@@ -39,7 +39,7 @@
 <td align="center">SSL+Sup</td>
 <td align="center">61.0</td>
 <td align="center">60.2</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_base.pth">model</a></td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/mae/pretrain/mae_finetuned_vit_base.pth">model</a></td>
 <td align="center"><a href="https://github.com/LUSSeg/ImageNetSegModel/releases/download/vit/imagenets_ssl-sup_mae_vit_base.pth">model</a></td>
 </tr>
 </tr>
