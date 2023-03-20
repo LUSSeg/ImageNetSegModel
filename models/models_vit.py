@@ -40,6 +40,14 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         # manually initialize fc layer
         trunc_normal_(self.head.weight, std=2e-5)
 
+    def forward_head(self, x):
+        return self.head(x)
+
+    def forward(self, x):
+        x = self.forward_features(x)
+        x = self.forward_head(x)
+        return x
+    
     def forward_features(self, x):
         B, _, w, h = x.shape
         x = self.patch_embed(x)
